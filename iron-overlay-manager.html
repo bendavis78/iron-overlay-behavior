@@ -22,12 +22,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     _backdrops: [],
 
+    _zIndexes: [],
+
     _applyOverlayZ: function(overlay, aboveZ) {
-      this._setZ(overlay, aboveZ + 2);
+      var z = aboveZ + 2;
+      var index = this._overlays.indexOf(overlay);
+      this._zIndexes[index] = z;
+      this._setZ(overlay, z);
     },
 
     _setZ: function(element, z) {
       element.style.zIndex = z;
+      if (!z) {
+        var index = this._overlays.indexOf(element);
+        this._zIndexes.splice(index, 1);
+      }
     },
 
     // track overlays for z-index and focus managemant
@@ -60,11 +69,13 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       var z = this._minimumZ;
       var current = this.currentOverlay();
       if (current) {
-        var z1 = window.getComputedStyle(current).zIndex;
+        var index = this._overlays.indexOf(current);
+        var z1 = this._zIndexes[index];
         if (!isNaN(z1)) {
           z = Number(z1);
         }
       }
+      console.groupEnd();
       return z;
     },
 
@@ -108,7 +119,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     getBackdrops: function() {
       return this._backdrops;
-    }
+    },
+
+    getOverlays: function() {
+      return this._overlays;
+    },
 
   };
 

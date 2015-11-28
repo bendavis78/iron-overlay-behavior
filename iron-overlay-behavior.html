@@ -156,8 +156,11 @@ context. You should place this element as a child of `<body>` whenever possible.
       return Polymer.dom(this).querySelector('[autofocus]') || this;
     },
 
-    registered: function() {
+    attached: function() {
       this._backdrop = document.createElement('iron-overlay-backdrop');
+      if (this.id) {
+        this._backdrop.id = (this.id + '_backdrop');
+      }
     },
 
     ready: function() {

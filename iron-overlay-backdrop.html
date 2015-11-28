@@ -10,6 +10,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="iron-overlay-manager.html">
+<link rel="import" href="../iron-resizable-behavior/iron-resizable-behavior.html">
 
 <!--
 `iron-overlay-backdrop` is a backdrop used by `Polymer.IronOverlayBehavior`. It should be a
@@ -33,15 +34,20 @@ Custom property | Description | Default
 
     :host {
       position: fixed;
+      background-color: var(--iron-overlay-backdrop-background-color, #000);
+      opacity: 0;
+      transition: opacity 0.2s;
+      margin: 0 !important;
+      padding: 0 !important;
+
+      @apply(--iron-overlay-backdrop);
+    }
+
+    :host(.top) {
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      background-color: var(--iron-overlay-backdrop-background-color, #000);
-      opacity: 0;
-      transition: opacity 0.2s;
-
-      @apply(--iron-overlay-backdrop);
     }
 
     :host([opened]) {
@@ -65,6 +71,7 @@ Custom property | Description | Default
   Polymer({
 
     is: 'iron-overlay-backdrop',
+    behaviors: [Polymer.IronResizableBehavior],
 
     properties: {
 
@@ -85,13 +92,40 @@ Custom property | Description | Default
 
     },
 
+    listeners: {
+      'iron-resize': '_updateSize'
+    },
+
     /**
-     * Appends the backdrop to document body and sets its `z-index` to be below the latest overlay.
+     * Appends the backdrop to the given parent and sets its `z-index` to be below the latest overlay.
      */
     prepare: function() {
       if (!this.parentNode) {
-        Polymer.dom(document.body).appendChild(this);
-        this.style.zIndex = this._manager.currentOverlayZ() - 1;
+        var parent;
+        var overlays = this._manager.getOverlays();
+        if (overlays.length > 1) {
+          parent = overlays.slice(-2)[0];
+        } else {
+          parent = document.body;
+        }
+        Polymer.dom(parent).appendChild(this);
+      }
+      if (this.parentNode === document.body) {
+        this.classList.add('top');
+      } else {
+        this.classList.remove('top');
+        this._updateSize();
+      }
+      this.style.zIndex = this._manager.currentOverlayZ() - 1;
+    },
+
+    _updateSize: function() {
+      if (this.parentNode && this.parentNode !== document.body) {
+        var rect = this.parentNode.getBoundingClientRect();
+        this.style.top = rect.top;
+        this.style.left = rect.left;
+        this.style.width = rect.width;
+        this.style.height = rect.height;
       }
     },
 
@@ -99,28 +133,21 @@ Custom property | Description | Default
      * Shows the backdrop if needed.
      */
     open: function() {
-      // only need to make the backdrop visible if this is called by the first overlay with a backdrop
-      if (this._manager.getBackdrops().length < 2) {
-        this._setOpened(true);
-      }
+      this._setOpened(true);
     },
 
     /**
      * Hides the backdrop if needed.
      */
     close: function() {
-      // only need to make the backdrop invisible if this is called by the last overlay with a backdrop
-      if (this._manager.getBackdrops().length < 2) {
-        this._setOpened(false);
-      }
+      this._setOpened(false);
     },
 
     /**
-     * Removes the backdrop from document body if needed.
+     * Removes the backdrop from its parent if needed.
      */
     complete: function() {
-      // only remove the backdrop if there are no more overlays with backdrops
-      if (this._manager.getBackdrops().length === 0 && this.parentNode) {
+      if (this.parentNode) {
         Polymer.dom(this.parentNode).removeChild(this);
       }
     }
